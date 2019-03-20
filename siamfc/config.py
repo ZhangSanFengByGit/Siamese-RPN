@@ -12,6 +12,7 @@ class Config:
     num_per_epoch = 4 * 53200              # num of samples per epoch
     train_ratio = 0.95                     # training ratio of VID dataset
     frame_range = 100                      # frame range of choosing the instance
+    source_range = 3                       # frame range of the source img
     train_batch_size = 64                  # training batch size
     valid_batch_size = 8                   # validation batch size
     train_num_workers = 4                  # number of workers of train dataloader
@@ -19,7 +20,7 @@ class Config:
 
     start_lr = 3e-4
     end_lr = 1e-6
-    warm_epoch = 0
+    warm_epoch = 10
     warm_lr = 1e-3
     warm_scale = warm_lr/start_lr
     epoch = 50
@@ -34,6 +35,7 @@ class Config:
     seed = 1234                            # seed to sample training videos
     log_dir = './models/logs'              # log dirs
     max_translate = 12                     # max translation of random shift
+    source_translate = 5                   # max translation of source image
     scale_resize = 0.15                    # scale step of instance image
     total_stride = 8                       # total stride of backbone
     valid_scope = int((instance_size - exemplar_size) / total_stride / 2)
@@ -48,7 +50,7 @@ class Config:
     lamb = 100
     save_interval = 1
     show_interval = 100
-    pretrained_model = '/mnt/usershare/zrq/pytorch/lab/model/zhangruiqi/finaltry/sharedata/alexnet.pth'
+    pretrained_model = None#'/mnt/usershare/zrq/pytorch/lab/model/zhangruiqi/finaltry/sharedata/alexnet.pth'
 
     # tracking related
     gray_ratio = 0.25

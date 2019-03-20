@@ -8,6 +8,7 @@ import functools
 import xml.etree.ElementTree as ET
 import sys
 import multiprocessing as mp
+from contextlib import closing
 
 from multiprocessing import Pool
 from fire import Fire
@@ -48,7 +49,7 @@ def worker(output_dir, video_dir):
             else:
                 trajs[trkid] = [filename]
             instance_crop_size = int(
-                np.ceil((config.instance_size + config.max_translate * 2) * (1 + config.scale_resize)))
+                np.ceil((config.instance_size + config.max_translate * 2) * (1 + config.scale_resize)))  #321
             bbox = np.array(
                 [(bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2, bbox[2] - bbox[0] + 1,
                  bbox[3] - bbox[1] + 1])
@@ -73,10 +74,11 @@ def processing(data_dir, output_dir, num_threads=mp.cpu_count()):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # functools.partial(worker, output_dir)(all_videos[3])
-    with Pool(processes=num_threads) as pool:
+    with closing(Pool(processes=num_threads)) as pool:
         for ret in tqdm(pool.imap_unordered(
                 functools.partial(worker, output_dir), all_videos), total=len(all_videos)):
             meta_data.append(ret)
+        pool.terminate()
     # save meta data
     pickle.dump(meta_data, open(os.path.join(output_dir, "meta_data.pkl"), 'wb'))
 

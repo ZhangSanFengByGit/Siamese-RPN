@@ -1,0 +1,9 @@
+V3_AutoSaved_epoch_model/
+eval_output/
+*.out
+*.pyc
+*.txt
+OTB2015/
+*.model
+*.pth
+/dataset_ssd

@@ -39,6 +39,7 @@ class ImagnetVIDDataset(Dataset):
         # data augmentation
         self.max_stretch = config.scale_resize
         self.max_translate = config.max_translate
+        self.source_translate = config.source_translate
         self.random_crop_size = config.instance_size
         self.center_crop_size = config.exemplar_size
 
@@ -79,15 +80,15 @@ class ImagnetVIDDataset(Dataset):
         gt_h = gt_h * scale_h
         return cv2.resize(sample, shape, cv2.INTER_LINEAR), gt_w, gt_h
 
-    def CenterCrop(self, sample, ):
+    def CenterCrop(self, sample, crop_size=self.center_crop_size):
         im_h, im_w, _ = sample.shape
         cy = (im_h - 1) / 2
         cx = (im_w - 1) / 2
 
-        ymin = cy - self.center_crop_size / 2 + 1 / 2
-        xmin = cx - self.center_crop_size / 2 + 1 / 2
-        ymax = ymin + self.center_crop_size - 1
-        xmax = xmin + self.center_crop_size - 1
+        ymin = cy - crop_size / 2 + 1 / 2
+        xmin = cx - crop_size / 2 + 1 / 2
+        ymax = ymin + crop_size - 1
+        xmax = xmin + crop_size - 1
 
         left = int(round(max(0., -xmin)))
         top = int(round(max(0., -ymin)))
@@ -116,21 +117,21 @@ class ImagnetVIDDataset(Dataset):
         else:
             im_patch_original = sample[int(ymin):int(ymax + 1), int(xmin):int(xmax + 1), :]
 
-        if not np.array_equal(im_patch_original.shape[:2], (self.center_crop_size, self.center_crop_size)):
+        if not np.array_equal(im_patch_original.shape[:2], (crop_size, crop_size)):
             im_patch = cv2.resize(im_patch_original,
-                                  (self.center_crop_size, self.center_crop_size))  # zzp: use cv to get a better speed
+                                  (crop_size, crop_size))  # zzp: use cv to get a better speed
         else:
             im_patch = im_patch_original
         return im_patch
 
-    def RandomCrop(self, sample, ):
+    def RandomCrop(self, sample, max_translate=self.max_translate):
         im_h, im_w, _ = sample.shape
         cy_o = (im_h - 1) / 2
         cx_o = (im_w - 1) / 2
-        cy = np.random.randint(cy_o - self.max_translate,
-                               cy_o + self.max_translate + 1)
-        cx = np.random.randint(cx_o - self.max_translate,
-                               cx_o + self.max_translate + 1)
+        cy = np.random.randint(cy_o - max_translate,
+                               cy_o + max_translate + 1)
+        cx = np.random.randint(cx_o - max_translate,
+                               cx_o + max_translate + 1)
         # assert abs(cy - cy_o) <= self.max_translate and \
         #        abs(cx - cx_o) <= self.max_translate
         gt_cx = cx_o - cx
@@ -201,6 +202,8 @@ class ImagnetVIDDataset(Dataset):
             trkid = np.random.choice(list(trajs.keys()))
             traj = trajs[trkid]
             assert len(traj) > 1, "video_name: {}".format(video)
+
+
             # sample exemplar
             exemplar_idx = np.random.choice(list(range(len(traj))))
             # exemplar_name = os.path.join(self.data_dir, video, traj[exemplar_idx] + ".{:02d}.x*.jpg".format(trkid))
@@ -208,14 +211,23 @@ class ImagnetVIDDataset(Dataset):
                 glob.glob(os.path.join(self.data_dir, video, traj[exemplar_idx] + ".{:02d}.x*.jpg".format(trkid)))[0]
             exemplar_img = self.imread(exemplar_name)
             # exemplar_img = cv2.cvtColor(exemplar_img, cv2.COLOR_BGR2RGB)
+
+
             # sample instance
             low_idx = max(0, exemplar_idx - config.frame_range)
             up_idx = min(len(traj), exemplar_idx + config.frame_range)
-
             # create sample weight, if the sample are far away from center
             # the probability being choosen are high
             weights = self._sample_weights(exemplar_idx, low_idx, up_idx, config.sample_type)
             instance = np.random.choice(traj[low_idx:exemplar_idx] + traj[exemplar_idx + 1:up_idx], p=weights)
+
+            low_idx = max(0, instance - config.source_range)
+            up_idx = min(len(traj), instance + config.source_range)
+            weights = self._sample_weights(instance, low_idx, up_idx, config.sample_type)
+            source = np.random.choice(traj[low_idx:instance] + traj[instance + 1:up_idx], p=weights)
+            
+            source_name = glob.glob(os.path.join(self.data_dir, video, source + ".{:02d}.x*.jpg".format(trkid)))[0]
+            source_img = self.imread(source_name)
             instance_name = glob.glob(os.path.join(self.data_dir, video, instance + ".{:02d}.x*.jpg".format(trkid)))[0]
             instance_img = self.imread(instance_name)
             # instance_img = cv2.cvtColor(instance_img, cv2.COLOR_BGR2RGB)
@@ -224,17 +236,32 @@ class ImagnetVIDDataset(Dataset):
             if np.random.rand(1) < config.gray_ratio:
                 exemplar_img = cv2.cvtColor(exemplar_img, cv2.COLOR_RGB2GRAY)
                 exemplar_img = cv2.cvtColor(exemplar_img, cv2.COLOR_GRAY2RGB)
+                source_img = cv2.cvtColor(source_img, cv2.COLOR_RGB2GRAY)
+                source_img = cv2.cvtColor(source_img, cv2.COLOR_GRAY2RGB)
                 instance_img = cv2.cvtColor(instance_img, cv2.COLOR_RGB2GRAY)
                 instance_img = cv2.cvtColor(instance_img, cv2.COLOR_GRAY2RGB)
+
             exemplar_img, _, _ = self.RandomStretch(exemplar_img, 0, 0)
+            #instance-size exemplar
+            exemplar_img_large = self.CenterCrop(exemplar_img, crop_size=self.random_crop_size)
+            exemplar_img_large = self.z_transforms(exemplar_img_large)
+            #exemplar
             exemplar_img = self.CenterCrop(exemplar_img, )
             exemplar_img = self.z_transforms(exemplar_img)
+            #source 
+            source_img, _, _ = self.RandomStretch(source_img, 0, 0)
+            source_img = self.RandomCrop(source_img, max_translate=self.source_translate)
+            source_img = self.x_transforms(source_img)
+            #instance
             instance_img, gt_w, gt_h = self.RandomStretch(instance_img, gt_w, gt_h)
             instance_img, gt_cx, gt_cy = self.RandomCrop(instance_img, )
             instance_img = self.x_transforms(instance_img)
+
             regression_target, conf_target = self.compute_target(self.anchors,
                                                                  np.array(list(map(round, [gt_cx, gt_cy, gt_w, gt_h]))))
 
+
+###############################################
             # img = instance_img.numpy().transpose(1, 2, 0)
             # pos_index = np.where(conf_target == 1)[0]
             # pos_anchor = self.anchors[pos_index]
@@ -303,12 +330,18 @@ class ImagnetVIDDataset(Dataset):
             # embed()
             # cv2.imshow('gt_box.jpg', show_img)
             # cv2.waitKey(30)
+###############################################
+
 
             if len(np.where(conf_target == 1)[0]) > 0:
                 break
             else:
                 idx = np.random.randint(self.num)
-        return exemplar_img, instance_img, regression_target, conf_target.astype(np.int64)
+        return exemplar_img, exemplar_img_large, source_img, instance_img, regression_target, conf_target.astype(np.int64)
+'''
+        needed return:
+        exemplar_imgs, exemplar_imgs_large, source_imgs, instance_imgs, regression_target, conf_target = data
+'''
 
     def draw_img(self, img, boxes, name='1.jpg', color=(0, 255, 0)):
         # boxes (x,y,w,h)

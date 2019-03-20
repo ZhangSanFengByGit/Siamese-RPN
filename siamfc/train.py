@@ -145,11 +145,13 @@ def train(data_dir, model_path=None, vis_port=None, init=None):
             loss_temp_cls = 0
             loss_temp_reg = 0
             for i, data in enumerate(tqdm(trainloader)):
-                exemplar_imgs, instance_imgs, regression_target, conf_target = data
+                exemplar_imgs, exemplar_imgs_large, source_imgs, instance_imgs,\
+                                                regression_target, conf_target = data
                 # conf_target (8,1125) (8,225x5)
                 regression_target, conf_target = regression_target.cuda(), conf_target.cuda()
 
-                pred_score, pred_regression = model(exemplar_imgs.cuda(), instance_imgs.cuda())
+                pred_score, pred_regression = model(exemplar_imgs.cuda(), exemplar_imgs_large.cuda(),\
+                                                         source_imgs.cuda(), instance_imgs.cuda())
 
                 pred_conf = pred_score.reshape(-1, 2,
                                                config.anchor_num * config.score_size * config.score_size).permute(0,
@@ -256,11 +258,13 @@ def train(data_dir, model_path=None, vis_port=None, init=None):
         loss_temp_cls = 0
         loss_temp_reg = 0
         for i, data in enumerate(tqdm(trainloader)):
-            exemplar_imgs, instance_imgs, regression_target, conf_target = data
+            exemplar_imgs, exemplar_imgs_large, source_imgs, instance_imgs,\
+                                                regression_target, conf_target = data
             # conf_target (8,1125) (8,225x5)
             regression_target, conf_target = regression_target.cuda(), conf_target.cuda()
 
-            pred_score, pred_regression = model(exemplar_imgs.cuda(), instance_imgs.cuda())
+            pred_score, pred_regression = model(exemplar_imgs.cuda(), exemplar_imgs_large.cuda(),\
+                                                         source_imgs.cuda(), instance_imgs.cuda())
 
             pred_conf = pred_score.reshape(-1, 2, config.anchor_num * config.score_size * config.score_size).permute(0,
                                                                                                                      2,
@@ -350,11 +354,13 @@ def train(data_dir, model_path=None, vis_port=None, init=None):
         valid_loss = []
         model.eval()
         for i, data in enumerate(tqdm(validloader)):
-            exemplar_imgs, instance_imgs, regression_target, conf_target = data
-
+            exemplar_imgs, exemplar_imgs_large, source_imgs, instance_imgs,\
+                                                regression_target, conf_target = data
+            # conf_target (8,1125) (8,225x5)
             regression_target, conf_target = regression_target.cuda(), conf_target.cuda()
 
-            pred_score, pred_regression = model(exemplar_imgs.cuda(), instance_imgs.cuda())
+            pred_score, pred_regression = model(exemplar_imgs.cuda(), exemplar_imgs_large.cuda(),\
+                                                         source_imgs.cuda(), instance_imgs.cuda())
 
             pred_conf = pred_score.reshape(-1, 2, config.anchor_num * config.score_size * config.score_size).permute(0,
                                                                                                                      2,

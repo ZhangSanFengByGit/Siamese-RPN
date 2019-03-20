@@ -4,6 +4,7 @@ import numpy as np
 import os
 import hashlib
 import functools
+from contextlib import closing
 
 from glob import glob
 from fire import Fire
@@ -31,11 +32,12 @@ def create_lmdb(data_dir, output_dir, num_threads=mp.cpu_count()):
     video_names = glob(data_dir + '/*')
     video_names = [x for x in video_names if os.path.isdir(x)]
     db = lmdb.open(output_dir, map_size=int(50e9))
-    with Pool(processes=num_threads) as pool:
+    with closing(Pool(processes=num_threads)) as pool:
         for ret in tqdm(pool.imap_unordered(functools.partial(worker), video_names), total=len(video_names)):
             with db.begin(write=True) as txn:
                 for k, v in ret.items():
                     txn.put(k, v)
+        pool.terminate()
 
 
 if __name__ == '__main__':
