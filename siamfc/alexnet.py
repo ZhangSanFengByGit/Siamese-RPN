@@ -129,7 +129,7 @@ class SiameseAlexNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 '''
-#forward is used for training
+    #forward is used for training
     def forward(self, template, template_l, source, detection):
         N = template.size(0)
         template_feature = self.featureExtract(template)
@@ -137,10 +137,10 @@ class SiameseAlexNet(nn.Module):
         source_feature = self.featureExtract(source)
         detection_feature = self.featureExtract(detection)
 
-#prepare the temple
+        #prepare the temple
         self.source_feature = source_feature
         self.temple_norm = F.normalize(template_l_feature.view(N, -1), p=2 ,dim=1)
-#propagation phase
+        #propagation phase
         b,c,h,w = detection_feature.size()
         concat_f = torch.cat((source_feature, detection_feature), dim=1)
         kernels = self.kernel_pre(concat_f)
@@ -150,7 +150,7 @@ class SiameseAlexNet(nn.Module):
         kernels = F.softmax(kernels, dim=2).view(b, h*w, 5, 5)
         prop_feature = self.propagate(kernels,b,c,h,w)
         assert not torch.isnan(prop_feature).any()
-#compute the weights
+        #compute the weights
         prop_w = self.compute_weigt(embed_prop)
         assert not torch.isnan(prop_w).any()
         x_w = self.compute_weigt(embed_x)
@@ -160,7 +160,7 @@ class SiameseAlexNet(nn.Module):
         assert weights.size()==torch.Size([2, N]),'weights.size {}'.format(weights.size())
         assert not torch.isnan(weights[0]).any()
         assert not torch.isnan(weights[1]).any()
-#fuze the origin and the predicted
+        #fuze the origin and the predicted
         prop_f_weighted = torch.empty(prop_feature.size(), device='cuda', requires_grad = False)
         detection_f_weighted = torch.empty(detection_feature.size(), device='cuda', requires_grad = False)
         for batch in range(N):
@@ -173,7 +173,7 @@ class SiameseAlexNet(nn.Module):
         assert not torch.isnan(fuzed_detection_f).any()
         print('weights_0: {}'.format(weights[0]))
         print('weights_1: {}'.format(weights[1]))
-#formal correlation process
+        #formal correlation process
         kernel_score = self.conv_cls1(template_feature).view(N, 2 * self.anchor_num, 256, 4, 4)
         kernel_regression = self.conv_r1(template_feature).view(N, 4 * self.anchor_num, 256, 4, 4)
         conv_score = self.conv_cls2(fuzed_detection_f)
@@ -192,7 +192,7 @@ class SiameseAlexNet(nn.Module):
         return pred_score, pred_regression
 
 
-#test phase
+    #test phase
     def track_init(self, template, template_l):
         N = template.size(0)
         template_feature = self.featureExtract(template)
