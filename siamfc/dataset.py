@@ -219,12 +219,13 @@ class ImagnetVIDDataset(Dataset):
             # create sample weight, if the sample are far away from center
             # the probability being choosen are high
             weights = self._sample_weights(exemplar_idx, low_idx, up_idx, config.sample_type)
-            instance = np.random.choice(traj[low_idx:exemplar_idx] + traj[exemplar_idx + 1:up_idx], p=weights)
+            instance_idx = np.random.choice([low_idx:exemplar_idx] + [exemplar_idx + 1:up_idx], p=weights)
+            instance = traj[instance_idx]
 
-            low_idx = max(0, instance - config.source_range)
-            up_idx = min(len(traj), instance + config.source_range)
-            weights = self._sample_weights(instance, low_idx, up_idx, config.sample_type)
-            source = np.random.choice(traj[low_idx:instance] + traj[instance + 1:up_idx], p=weights)
+            low_idx = max(0, instance_idx - config.source_range)
+            up_idx = min(len(traj), instance_idx + config.source_range)
+            weights = self._sample_weights(instance_idx, low_idx, up_idx, config.sample_type)
+            source = np.random.choice(traj[low_idx:instance_idx] + traj[instance_idx + 1:up_idx], p=weights)
             
             source_name = glob.glob(os.path.join(self.data_dir, video, source + ".{:02d}.x*.jpg".format(trkid)))[0]
             source_img = self.imread(source_name)
