@@ -20,7 +20,7 @@ class Config:
 
     start_lr = 3e-4
     end_lr = 1e-6
-    warm_epoch = 10
+    warm_epoch = 5
     warm_lr = 1e-3
     warm_scale = warm_lr/start_lr
     epoch = 50
