@@ -50,7 +50,7 @@ class Config:
     lamb = 100
     save_interval = 1
     show_interval = 100
-    pretrained_model = '/mnt/usershare/zrq/pytorch/lab/model/zhangruiqi/finaltry/sharedata/alexnet.pth'
+    pretrained_model = '/home/zhangzichun/projects/Siamese-RPN/alexnet.pth'
 
     # tracking related
     gray_ratio = 0.25
