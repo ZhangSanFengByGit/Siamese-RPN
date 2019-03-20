@@ -75,10 +75,10 @@ class SiameseAlexNet(nn.Module):
                             cur = self.source_feature[bb,:,hh+self.delta[order][1], ww+self.delta[order][0]] * \
                                   kernels[ bb, hh*w+ww, int(order/5), int(order%5) ]
 
-                            if type(product)!=torch.Tensor:
-                                product = cur
+                            if product:
+                                product = product + cur
                             else:
-                                product = product+cur
+                                product = cur
 
                     prop_f[bb,:, hh, ww] = product
 
@@ -203,7 +203,7 @@ class SiameseAlexNet(nn.Module):
         detection_feature = self.featureExtract(detection)
 
         #propagation part
-        if type(self.source_feature)==torch.Tensor:
+        if self.source_feature:
             b,c,h,w = detection_feature.size()
             concat_f = torch.cat((source_feature, detection_feature), dim=1)
             kernels = self.kernel_pre(concat_f)
