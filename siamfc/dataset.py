@@ -80,7 +80,7 @@ class ImagnetVIDDataset(Dataset):
         gt_h = gt_h * scale_h
         return cv2.resize(sample, shape, cv2.INTER_LINEAR), gt_w, gt_h
 
-    def CenterCrop(self, sample, crop_size=self.center_crop_size):
+    def CenterCrop(self, sample, crop_size=config.exemplar_size):
         im_h, im_w, _ = sample.shape
         cy = (im_h - 1) / 2
         cx = (im_w - 1) / 2
@@ -124,7 +124,7 @@ class ImagnetVIDDataset(Dataset):
             im_patch = im_patch_original
         return im_patch
 
-    def RandomCrop(self, sample, max_translate=self.max_translate):
+    def RandomCrop(self, sample, max_translate=config.max_translate):
         im_h, im_w, _ = sample.shape
         cy_o = (im_h - 1) / 2
         cx_o = (im_w - 1) / 2
