@@ -158,11 +158,11 @@ class SiameseAlexNet(nn.Module):
             detection_f_weighted[batch] = detection_feature[batch] * weights[1,batch]
         assert prop_f_weighted.requires_grad == True
         assert detection_f_weighted.requires_grad == True
-
         fuzed_detection_f = prop_feature + detection_feature
         assert not torch.isnan(fuzed_detection_f).any()
         print('weights_0: {}'.format(weights[0]))
         print('weights_1: {}'.format(weights[1]))
+
         #formal correlation process
         kernel_score = self.conv_cls1(template_feature).view(N, 2 * self.anchor_num, 256, 4, 4)
         kernel_regression = self.conv_r1(template_feature).view(N, 4 * self.anchor_num, 256, 4, 4)

@@ -219,6 +219,7 @@ class ImagnetVIDDataset(Dataset):
             # create sample weight, if the sample are far away from center
             # the probability being choosen are high
             weights = self._sample_weights(exemplar_idx, low_idx, up_idx, config.sample_type)
+            print(weights)
             instance = np.random.choice(traj[low_idx:exemplar_idx] + traj[exemplar_idx + 1:up_idx], p=weights)
 
             low_idx = max(0, instance - config.source_range)
